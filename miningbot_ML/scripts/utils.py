@@ -43,3 +43,18 @@ def getWindow(name):
     rect = win32gui.GetWindowRect(hwnd)
     x, y, w, h = rect[0], rect[1], rect[2], rect[3]
     return (x, y, w, h)
+
+import ast
+
+def parse_input(input_string):
+    try:
+        # Safely evaluate the input string as a literal expression
+        result = ast.literal_eval(input_string)
+        # Check if the result is a list of lists
+        if isinstance(result, list) and all(isinstance(sublist, list) and len(sublist) == 2 for sublist in result):
+            return result
+        else:
+            raise ValueError("Input is not a valid list of lists.")
+    except (SyntaxError, ValueError) as e:
+        print(f"Error: {e}", " ERROR IS HERE")
+        return None

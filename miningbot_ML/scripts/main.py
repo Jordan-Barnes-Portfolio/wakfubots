@@ -13,15 +13,34 @@ Notes:
 import pyautogui as pg
 import gridService as gs
 import player
-from utils import getPID, getWindow, setDimensions
+from utils import getPID, getWindow, setDimensions, parse_input
 import time
 import os
+import PySimpleGUI as sg
+import psutil
+import subprocess
+
 
 class Main():
     def __init__(self):
         try:
             
             os.system('cls')
+            
+            print("""\
+                  Program by: Plastic
+
+                                   ._ o o
+                                   \_`-)|_
+                                ,""       \ 
+                              ,"  ## |   ಠ ಠ. 
+                            ," ##   ,-\__    `.
+                          ,"       /     `--._;)
+                        ,"     ## /
+                      ,"   ##    /
+
+
+                """)
             
             print("Initializing...")
             time.sleep(0.25)
@@ -39,10 +58,45 @@ class Main():
             PID = getPID("java")
             
             time.sleep(1)
-            os.system('cls')
+
+            print("Use last known memory locations? If you dont know what this is. \nPut N and go to the README\n")
+            use_last = input("Y/N: ")
+            print(use_last)
+            use_last = use_last.lower()
+            if(use_last == "n" or use_last == "no"):
+                print("Getting game data.")
+                executable_path = 'C:\\Program Files\\Cheat Engine 7.5\\Cheat Engine.exe'
+                try:
+                    # Use subprocess.run() to start the executable
+                    subprocess.run([executable_path])
+                except FileNotFoundError:
+                    print(f"Error: The executable '{executable_path}' was not found.")
+
+                time.sleep(0.25)
+                i = 0
+                while("cheatengine-x86_64-SSE4-AVX2.exe" in (i.name() for i in psutil.process_iter())):
+                    i+=1
+                    Processing = "."*i
+                    print("\rProcessing"+Processing, end='', flush=True)
+                    if(i>3):
+                        i=0
+                        print("\r                             ", end='', flush=True)
+                        continue
+                    time.sleep(0.5)
+                print("\n")
+           
+            elif(use_last == "y" or use_last == "yes"):
+                print("\nAlright.. I hope you're right..")
+            else:
+                print("Invalid entry.. idiot. Its Y or N")
+                print("Going with last saved data.  If it fails, restart your bot dumbass.")
+ 
+                
+            with open("C:/Users/Jordan/Desktop/Programming/GIT/wakfubots/LUA/DATA/DATA.txt", 'r') as file:
+                data = file.readlines()
             
-            #Pointers to our players position
-            xPtr = input("Enter X coordinate memory address found in Cheat Engine.\nIf you do not know how to find this address, please see the README in your install folder.\n")
+            
+            xPtr = data[0]
             
             xPtr = int(xPtr, 16)
             #PTR offset for y coordinate
@@ -58,56 +112,95 @@ class Main():
             pl.position = pl.setPlayerCoords(xPtr, yPtr, pid) // sets our players position
             """
             
+            print("\n Data for nerds below\n-----------------------------")
             print("Pid:", Player.PID)
-            time.sleep(3)
-            os.system('cls')
+            print("Player_Mem_Location: ", data)
+            print(str(offset))
+            time.sleep(2)
+            s=0
+            i=0
+            while(s!=1):
+                i+=1
+                Processing = "."*i
+                print("\rInitializing GUI"+Processing, end='', flush=True)
+                if(i>3):
+                    i=0
+                    print("\r                                               ", end='', flush=True)
+                    continue
+                time.sleep(0.5)
+                s+=1
             
-            print("Press CNTRL + C to stop the program at any time.")
+            print("\nDone! Have fun.")
             
-            Player.position = Player.setPlayerCoords(xPtr, yPtr)
-            print("\rPlayer starting position: " + str(Player.position), end='', flush=True)
+            def update_variables(window, variable1, variable2, variable3):
+                window['-VAR1-'].update(f"Players position: {variable1}")
+                window['-VAR2-'].update(f"Users mouse position: {variable2}")
+                window['-VAR3-'].update(f"Points of interest: {variable3}")
             
-            while(True):
-                Player.position = Player.setPlayerCoords(xPtr, yPtr)
-                temp_coords = Player.position
-                time.sleep(0.1)
-                if(Player.setPlayerCoords(xPtr, yPtr) != temp_coords):
-                    print("\rPlayers current position: ", str(Player.setPlayerCoords(xPtr, yPtr)), end='', flush=True)
+            sg.theme('DarkGrey')
+            
+            layout = [
+                [sg.Text("Players current position: ", key='-VAR1-')],
+                [sg.Text("Players mouse position: ", key='-VAR2-')],
+                [sg.Button("Add point of interest")],
+                [sg.Text("Points of interest: ", key='-VAR3-')],
+                [sg.Button("Harvest Resources")],
+                [sg.Button("Save POI's"), sg.Button("DELETE")], 
+                [sg.Button("Exit")]
+            ]
+
+            window = sg.Window("Wakfu Bots", layout, finalize=True)
+
+            variable1 = 0
+            variable2 = 0
+            variable3 = 0
+            
+            with open('C:/Users/Jordan/Desktop/Programming/GIT/wakfubots/miningbot_ML/scripts/data/locations.txt', 'r') as file:
+                var=file.readlines()
+            
+            POI = parse_input(var[0])
+            
+            while True:
+                event, values = window.read(timeout=250)  # Updates every .25 secs
+
+                if event == sg.WIN_CLOSED or event == 'Exit':
+                    break
+                elif event == "Add point of interest":
+                    POI.append(Player.setPlayerCoords(xPtr, yPtr))
+                elif event == "Save POI's":
+                    with open('C:/Users/Jordan/Desktop/Programming/GIT/wakfubots/miningbot_ML/scripts/data/locations.txt', 'w') as file:
+                        file.write(variable3)
+                elif event == "DELETE":
+                    with open('C:/Users/Jordan/Desktop/Programming/GIT/wakfubots/miningbot_ML/scripts/data/locations.txt', 'w') as file:
+                        file.write("")
+                        POI = []
+                elif event == "Harvest Resources":
+                    for x in POI:
+                        try:
+                            Grid.harvest_resource(list(variable1), list(x))
+                            time.sleep(1)
+                        except Exception as e:
+                            print(variable1)
+                            print(x)
+                            print("Error: " + str(e))
+                
+                variable1 = Player.setPlayerCoords(xPtr, yPtr)
+                variable2 = str(pg.position())
+                variable3 = str(POI)
+                update_variables(window, variable1, variable2, variable3)
+
+            window.close()
+            
         
         except Exception as e:
             if('Invalid window handle.' in str(e)):
-                print("ERROR: Ensure that WAKFU is open and runnning..\nExiting..")
+                print("ERROR: Ensure that WAKFU is open and runnning../nExiting..")
             else:
                 print("Error: ", str(e))
                 
-        
-        
+
 Main()
     
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 # while(True):
